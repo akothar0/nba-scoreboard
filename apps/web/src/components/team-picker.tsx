@@ -32,16 +32,18 @@ export function TeamPicker({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Settings2 className="h-4 w-4" />
-          My Teams
-          {favoriteTeamIds.length > 0 && (
-            <span className="rounded-full bg-yellow-400/20 px-1.5 text-xs text-yellow-400">
-              {favoriteTeamIds.length}
-            </span>
-          )}
-        </Button>
+      <DialogTrigger
+        render={
+          <Button variant="outline" size="sm" className="gap-2" />
+        }
+      >
+        <Settings2 className="h-4 w-4" />
+        My Teams
+        {favoriteTeamIds.length > 0 && (
+          <span className="rounded-full bg-yellow-400/20 px-1.5 text-xs text-yellow-400">
+            {favoriteTeamIds.length}
+          </span>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
