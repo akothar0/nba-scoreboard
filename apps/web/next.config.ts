@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "a.espncdn.com",
         pathname: "/i/teamlogos/**",
       },
+      {
+        protocol: "https",
+        hostname: "a.espncdn.com",
+        pathname: "/i/headshots/**",
+      },
     ],
   },
 };

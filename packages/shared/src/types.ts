@@ -8,6 +8,41 @@ export interface NBATeam {
   conference: "East" | "West";
 }
 
+export interface GameLeaderEntry {
+  name: string;
+  displayValue: string;
+  athlete: {
+    id: string;
+    displayName: string;
+    headshot: string;
+    position: string;
+    team: { abbreviation: string };
+  };
+}
+
+export interface GameLeaders {
+  home: GameLeaderEntry[];
+  away: GameLeaderEntry[];
+}
+
+export interface PeriodScore {
+  period: number;
+  value: string;
+}
+
+export interface GameLinescores {
+  home: PeriodScore[];
+  away: PeriodScore[];
+}
+
+export interface GameSituation {
+  lastPlay?: { text: string };
+  probability?: {
+    homeWinPercentage: number;
+    awayWinPercentage: number;
+  };
+}
+
 export interface Game {
   id: string;
   home_team_id: string;
@@ -32,6 +67,10 @@ export interface Game {
   broadcast: string | null;
   venue_name: string | null;
   venue_city: string | null;
+  leaders: GameLeaders | null;
+  linescores: GameLinescores | null;
+  situation: GameSituation | null;
+  notes: string | null;
   updated_at: string;
 }
 

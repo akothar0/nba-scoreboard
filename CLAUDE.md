@@ -62,8 +62,14 @@ npm run build        # Build all
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-## Phase 2 Plan
-See `.claude/plans/rosy-baking-spring.md` for the full implementation plan covering:
-1. Expandable game cards with quarter scores, player headshots, win probability bar
-2. Date navigation timeline (browse past/future games)
-3. Live game context badges (PLAY-IN, CLUTCH, score differential)
+## Phase 2 (Implemented)
+See `.claude/plans/rosy-baking-spring.md` for full details. Features:
+1. **Expandable game cards** — click to reveal quarter scores, player headshots, win probability bar
+2. **Date navigation timeline** — horizontal scrollable date strip, ±7 days, arrow keys
+3. **Live game context badges** — PLAY-IN, CLUTCH, CLOSE, BLOWOUT, PLAYOFFS/FINALS
+4. **Live enhancements** — shimmer animation, last play ticker, win probability bar with team colors
+
+### Deployment checklist for Phase 2:
+1. Run `supabase/migrations/002_add_game_details.sql` on Supabase
+2. Deploy worker to Railway (populates new JSONB fields)
+3. Deploy web to Vercel

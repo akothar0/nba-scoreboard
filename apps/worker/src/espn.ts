@@ -1,4 +1,4 @@
-import type { Game } from "@nba-scoreboard/shared";
+import type { Game, GameLeaders, GameLeaderEntry, GameLinescores, GameSituation } from "@nba-scoreboard/shared";
 
 const SCOREBOARD_URL =
   "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
@@ -15,6 +15,20 @@ interface ESPNCompetitor {
   };
   score?: string;
   records?: { summary: string }[];
+  linescores?: { value: number }[];
+  leaders?: {
+    name: string;
+    displayName: string;
+    leaders: {
+      displayValue: string;
+      athlete: {
+        id: string;
+        displayName: string;
+        headshot?: { href: string };
+        position?: { abbreviation: string };
+      };
+    }[];
+  }[];
 }
 
 interface ESPNStatus {
@@ -26,6 +40,11 @@ interface ESPNStatus {
   };
 }
 
+interface ESPNSituation {
+  lastPlay?: { text: string };
+  lastEvent?: { text: string };
+}
+
 interface ESPNEvent {
   id: string;
   date: string;
@@ -34,7 +53,36 @@ interface ESPNEvent {
     status: ESPNStatus;
     venue?: { fullName?: string; address?: { city?: string } };
     broadcast?: { market?: string; names?: string[] };
+    situation?: ESPNSituation;
+    odds?: { homeTeamOdds?: { winPercentage?: number }; awayTeamOdds?: { winPercentage?: number } }[];
+    notes?: { headline?: string }[];
   }[];
+}
+
+function parseLeaders(competitor: ESPNCompetitor): GameLeaderEntry[] {
+  if (!competitor.leaders) return [];
+  return competitor.leaders.map((cat) => {
+    const top = cat.leaders[0];
+    return {
+      name: cat.name,
+      displayValue: top.displayValue,
+      athlete: {
+        id: top.athlete.id,
+        displayName: top.athlete.displayName,
+        headshot: top.athlete.headshot?.href ?? "",
+        position: top.athlete.position?.abbreviation ?? "",
+        team: { abbreviation: competitor.team.abbreviation },
+      },
+    };
+  });
+}
+
+function parseLinescores(competitor: ESPNCompetitor): { period: number; value: string }[] {
+  if (!competitor.linescores) return [];
+  return competitor.linescores.map((ls, i) => ({
+    period: i + 1,
+    value: String(ls.value),
+  }));
 }
 
 function parseGame(event: ESPNEvent): Game {
@@ -43,6 +91,41 @@ function parseGame(event: ESPNEvent): Game {
   const away = comp.competitors.find((c) => c.homeAway === "away")!;
 
   const gameDate = event.date.split("T")[0];
+
+  // Parse leaders
+  const homeLeaders = parseLeaders(home);
+  const awayLeaders = parseLeaders(away);
+  const leaders: GameLeaders | null =
+    homeLeaders.length > 0 || awayLeaders.length > 0
+      ? { home: homeLeaders, away: awayLeaders }
+      : null;
+
+  // Parse linescores
+  const homeLinescores = parseLinescores(home);
+  const awayLinescores = parseLinescores(away);
+  const linescores: GameLinescores | null =
+    homeLinescores.length > 0 || awayLinescores.length > 0
+      ? { home: homeLinescores, away: awayLinescores }
+      : null;
+
+  // Parse situation (live game context)
+  let situation: GameSituation | null = null;
+  if (comp.situation || comp.odds) {
+    situation = {};
+    if (comp.situation?.lastPlay) {
+      situation.lastPlay = { text: comp.situation.lastPlay.text };
+    }
+    const odds = comp.odds?.[0];
+    if (odds?.homeTeamOdds?.winPercentage != null) {
+      situation.probability = {
+        homeWinPercentage: odds.homeTeamOdds.winPercentage,
+        awayWinPercentage: odds.awayTeamOdds?.winPercentage ?? (1 - odds.homeTeamOdds.winPercentage),
+      };
+    }
+  }
+
+  // Parse notes (game context like "NBA Play-In - East")
+  const notes = comp.notes?.[0]?.headline ?? null;
 
   return {
     id: event.id,
@@ -68,12 +151,19 @@ function parseGame(event: ESPNEvent): Game {
     broadcast: comp.broadcast?.names?.[0] ?? null,
     venue_name: comp.venue?.fullName ?? null,
     venue_city: comp.venue?.address?.city ?? null,
+    leaders,
+    linescores,
+    situation,
+    notes,
     updated_at: new Date().toISOString(),
   };
 }
 
-export async function fetchScoreboard(): Promise<Game[]> {
-  const res = await fetch(SCOREBOARD_URL);
+export async function fetchScoreboard(date?: string): Promise<Game[]> {
+  const url = date
+    ? `${SCOREBOARD_URL}?dates=${date.replace(/-/g, "")}`
+    : SCOREBOARD_URL;
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`ESPN API error: ${res.status} ${res.statusText}`);
   }

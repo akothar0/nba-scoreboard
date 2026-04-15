@@ -32,8 +32,12 @@ function GameSkeleton() {
   );
 }
 
-export function Scoreboard() {
-  const { games, loading: gamesLoading } = useLiveScores();
+interface ScoreboardProps {
+  date?: string;
+}
+
+export function Scoreboard({ date }: ScoreboardProps) {
+  const { games, loading: gamesLoading } = useLiveScores(date);
   const { favoriteTeamIds, toggleFavorite, isSignedIn, loading: favsLoading } =
     useFavorites();
 
@@ -53,9 +57,9 @@ export function Scoreboard() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <span className="text-5xl mb-4">🏀</span>
-        <h2 className="text-xl font-semibold mb-2">No games today</h2>
+        <h2 className="text-xl font-semibold mb-2">No games scheduled</h2>
         <p className="text-muted-foreground text-sm">
-          Check back later for upcoming NBA games.
+          Try a different date — use the arrows to navigate.
         </p>
       </div>
     );
